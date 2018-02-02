@@ -10,6 +10,7 @@ import socket
 import locale
 import logging
 import argparse
+import pdb
 from http import cookiejar
 from importlib import import_module
 from urllib import request, parse, error
@@ -405,6 +406,7 @@ def get_content(url, headers={}, decoded=True):
 
     logging.debug('get_content: %s' % url)
 
+    # pdb.set_trace()
     req = request.Request(url, headers=headers)
     if cookies:
         cookies.add_cookie_header(req)
@@ -479,13 +481,17 @@ def url_size(url, faker=False, headers={}):
     if faker:
         response = urlopen_with_retry(
             request.Request(url, headers=fake_headers)
-        )
+)
     elif headers:
         response = urlopen_with_retry(request.Request(url, headers=headers))
     else:
         response = urlopen_with_retry(url)
 
-    size = response.headers['content-length']
+    data = response.read()
+    size = data.__len__()
+    # hstr = response.headers.as_string()
+    logging.debug("response.conent size {size} ".format(size=size))
+    # size = response.headers['content-length']
     return int(size) if size is not None else float('inf')
 
 
@@ -591,6 +597,8 @@ def url_save(
     url, filepath, bar, refer=None, is_part=False, faker=False,
     headers=None, timeout=None, **kwargs
 ):
+    # pdb.set_trace()
+    logging.debug("url_save the url " + url)
     tmp_headers = headers.copy() if headers is not None else {}
     # When a referer specified with param refer,
     # the key must be 'Referer' for the hack here
@@ -865,6 +873,8 @@ def download_urls(
         launch_player(player, urls)
         return
 
+    # pdb.set_trace()
+    logging.debug("download_urls compute total_size")
     if not total_size:
         try:
             total_size = urls_size(urls, faker=faker, headers=headers)
@@ -873,6 +883,7 @@ def download_urls(
             traceback.print_exc(file=sys.stdout)
             pass
 
+        logging.debug("#####total_size is computed")
     title = tr(get_filename(title))
     output_filename = get_output_filename(urls, title, ext, output_dir, merge)
     output_filepath = os.path.join(output_dir, output_filename)
@@ -887,6 +898,7 @@ def download_urls(
     else:
         bar = PiecesProgressBar(total_size, len(urls))
 
+    logging.debug("#####total_size is {size}".format(size=total_size))
     if len(urls) == 1:
         url = urls[0]
         print('Downloading %s ...' % tr(output_filename))

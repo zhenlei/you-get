@@ -9,6 +9,7 @@ from time import time
 from random import random
 import xml.etree.ElementTree as ET
 from copy import copy
+import pdb
 
 """
 Do not replace http.client with get_content
@@ -59,8 +60,10 @@ def _get_video_list(resourceID):
     """"""
     conn = http.client.HTTPConnection("210.76.211.10")
         
+    logging.debug("##### try to connect to ucas server")
     conn.request("GET", '/vplus/member/resource.do?isyulan=0&method=queryFlashXmlByResourceId&resourceId={resourceID}&randoms={randoms}'.format(resourceID = resourceID,
                                                                                                                                             randoms = random()))
+    # pdb.set_trace()
     res = conn.getresponse()
     data = res.read()
 
@@ -113,6 +116,8 @@ def ucas_download_single(url, output_dir = '.', merge = False, info_only = False
     for k, part in enumerate(url_lists):
         part_title = title + '_' + str(k)
         print_info(site_info, part_title, 'flv', 0)
+        # pdb.set_trace()
+        logging.debug("###begin to download_urls")
         if not info_only:
             download_urls(part, part_title, 'flv', total_size=None, output_dir=output_dir, merge=merge)
 
