@@ -41,7 +41,7 @@ def _get_video_query_url(resourceID):
         'Connection': 'keep-alive',
     }
     conn = http.client.HTTPConnection("210.76.211.10")
-    
+
     conn.request("GET", "/vplus/remote.do?method=query2&loginname=videocas&pwd=af1c7a4c5f77f790722f7cae474c37e281203765d423a23b&resource=%5B%7B%22resourceID%22%3A%22" + resourceID + "%22%2C%22on%22%3A1%2C%22time%22%3A600%2C%22eid%22%3A100%2C%22w%22%3A800%2C%22h%22%3A600%7D%5D&timeStamp=" + str(int(time())), headers=headers)
     res = conn.getresponse()
     data = res.read()
@@ -52,14 +52,14 @@ def _get_video_query_url(resourceID):
 def _get_virtualPath(video_query_url):
     #getResourceJsCode2
     html = get_content(video_query_url)
-    
+
     return match1(html, r"function\s+getVirtualPath\(\)\s+{\s+return\s+'(\w+)'")
 
 
 def _get_video_list(resourceID):
     """"""
     conn = http.client.HTTPConnection("210.76.211.10")
-        
+
     logging.debug("##### try to connect to ucas server")
     conn.request("GET", '/vplus/member/resource.do?isyulan=0&method=queryFlashXmlByResourceId&resourceId={resourceID}&randoms={randoms}'.format(resourceID = resourceID,
                                                                                                                                             randoms = random()))
@@ -86,12 +86,15 @@ def _get_video_list(resourceID):
 def _ucas_get_url_lists_by_resourceID(resourceID):
     video_query_url = _get_video_query_url(resourceID)
     assert video_query_url != '', 'Cannot find video GUID!'
-    
+    logging.debug("video_query_url is {}".format(video_query_url))
+
     virtualPath = _get_virtualPath(video_query_url)
     assert virtualPath != '', 'Cannot find virtualPath!'
-    
+    logging.debug("virtualPath is {}".format(virtualPath))
+
     url_lists = _get_video_list(resourceID)
     assert url_lists, 'Cannot find any URL to download!'
+    logging.debug("url_lists is {}".format(url_lists))
 
     # make real url
     # credit to a mate in UCAS
@@ -104,15 +107,17 @@ def _ucas_get_url_lists_by_resourceID(resourceID):
 
 def ucas_download_single(url, output_dir = '.', merge = False, info_only = False, **kwargs):
     '''video page'''
+    logging.debug("ucas_download_single %s", url)
     html = get_content(url)
     # resourceID is UUID
     resourceID = re.findall( r'resourceID":"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', html)[0]
     assert resourceID != '', 'Cannot find resourceID!'
 
+    logging.debug("----ucas_download_single resourceID is %s", resourceID)
     title = match1(html, r'<div class="bc-h">(.+)</div>')
     url_lists = _ucas_get_url_lists_by_resourceID(resourceID)
     assert url_lists, 'Cannot find any URL of such class!'
-    
+
     for k, part in enumerate(url_lists):
         part_title = title + '_' + str(k)
         print_info(site_info, part_title, 'flv', 0)
@@ -120,9 +125,11 @@ def ucas_download_single(url, output_dir = '.', merge = False, info_only = False
         logging.debug("###begin to download_urls")
         if not info_only:
             download_urls(part, part_title, 'flv', total_size=None, output_dir=output_dir, merge=merge)
+            # download_urls(part, part_title, 'flv', total_size=None, output_dir=output_dir, merge=merge, headers=headers)
 
 def ucas_download_playlist(url, output_dir = '.', merge = False, info_only = False, **kwargs):
     '''course page'''
+    logging.debug("ucas_download_playlist -----")
     html = get_content(url)
 
     parts = re.findall( r'(getplaytitle.do\?.+)"', html)
@@ -132,10 +139,13 @@ def ucas_download_playlist(url, output_dir = '.', merge = False, info_only = Fal
         ucas_download('http://v.ucas.ac.cn/course/' + part_path, output_dir=output_dir, merge=merge, info_only=info_only)
 
 def ucas_download(url, output_dir = '.', merge = False, info_only = False, **kwargs):
+    logging.debug("ucas_download -----")
     if 'classid=' in url and 'getplaytitle.do' in url:
         ucas_download_single(url, output_dir=output_dir, merge=merge, info_only=info_only)
     elif 'CourseIndex.do' in url:
         ucas_download_playlist(url, output_dir=output_dir, merge=merge, info_only=info_only)
+    else:
+        logging.error("------failed to parse url content")
 
 site_info = "UCAS"
 download = ucas_download

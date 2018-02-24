@@ -185,6 +185,9 @@ def general_m3u8_extractor(url, headers={}):
                 urls.append(line)
             else:
                 seg_url = parse.urljoin(url, line)
+
+
+
                 urls.append(seg_url)
     return urls
 
@@ -478,25 +481,31 @@ def post_content(url, headers={}, post_data={}, decoded=True):
 
 
 def url_size(url, faker=False, headers={}):
+    logging.debug("----url_size query url: {url} faker=True".format(url=url))
     if faker:
+        # fake_headers["Method"]="HEAD"
+        logging.debug("----url_size headers: {headers} method=HEAD".format(headers=fake_headers))
         response = urlopen_with_retry(
-            request.Request(url, headers=fake_headers)
-)
+            request.Request(url, headers=fake_headers, method='HEAD'))
     elif headers:
-        response = urlopen_with_retry(request.Request(url, headers=headers))
+        response = urlopen_with_retry(request.Request(url, headers=headers, method='HEAD'))
     else:
         response = urlopen_with_retry(url)
 
-    data = response.read()
-    size = data.__len__()
-    # hstr = response.headers.as_string()
+    size = None
+    try:
+        logging.debug("-----url size content headers: {}".format(response.headers))
+        size = response.headers['content-length']
+    except:
+        logging.error("response dones't have conent size ")
+
     logging.debug("response.conent size {size} ".format(size=size))
-    # size = response.headers['content-length']
+
     return int(size) if size is not None else float('inf')
 
 
 def urls_size(urls, faker=False, headers={}):
-    return sum([url_size(url, faker=faker, headers=headers) for url in urls])
+    return sum([url_size(url, faker=True, headers=headers) for url in urls])
 
 
 def get_head(url, headers={}, get_method='HEAD'):
@@ -604,7 +613,7 @@ def url_save(
     # the key must be 'Referer' for the hack here
     if refer is not None:
         tmp_headers['Referer'] = refer
-    file_size = url_size(url, faker=faker, headers=tmp_headers)
+    file_size = url_size(url, faker=True, headers=tmp_headers)
 
     if os.path.exists(filepath):
         if not force and file_size == os.path.getsize(filepath):
@@ -874,16 +883,15 @@ def download_urls(
         return
 
     # pdb.set_trace()
-    logging.debug("download_urls compute total_size")
     if not total_size:
         try:
+            logging.debug("download_urls re-compute total_size")
             total_size = urls_size(urls, faker=faker, headers=headers)
         except:
             import traceback
             traceback.print_exc(file=sys.stdout)
             pass
 
-        logging.debug("#####total_size is computed")
     title = tr(get_filename(title))
     output_filename = get_output_filename(urls, title, ext, output_dir, merge)
     output_filepath = os.path.join(output_dir, output_filename)
@@ -1218,6 +1226,7 @@ def print_more_compatible(*args, **kwargs):
 
 
 def download_main(download, download_playlist, urls, playlist, **kwargs):
+    logging.debug("deownload_main is called-----")
     for url in urls:
         if re.match(r'https?://', url) is None:
             url = 'http://' + url
@@ -1413,6 +1422,7 @@ def script_main(download, download_playlist, **kwargs):
         # Set level of root logger to DEBUG
         logging.getLogger().setLevel(logging.DEBUG)
 
+    logging.info("set logging level to debug : {}-----".format(args.debug))
     global force
     global dry_run
     global json_output
@@ -1592,4 +1602,5 @@ def any_download_playlist(url, **kwargs):
 
 
 def main(**kwargs):
+    log.i("------------ log.i begin of main----------")
     script_main(any_download, any_download_playlist, **kwargs)
