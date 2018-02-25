@@ -380,8 +380,10 @@ def get_location(url):
 
 
 def urlopen_with_retry(*args, **kwargs):
-    retry_time = 3
+    retry_time = 10
+    print(*args, **kwargs)
     for i in range(retry_time):
+        logging.debug("-----urlopen retry time: %d" % i)
         try:
             return request.urlopen(*args, **kwargs)
         except socket.timeout as e:
@@ -666,10 +668,12 @@ def url_save(
             tmp_headers['Referer'] = refer
 
         if timeout:
+            logging.debug("----urlopen_with_retry with timeout : {t}".format(t=timeout))
             response = urlopen_with_retry(
                 request.Request(url, headers=tmp_headers), timeout=timeout
             )
         else:
+            logging.debug("----urlopen_with_retry without timeout : {}".format(timeout))
             response = urlopen_with_retry(
                 request.Request(url, headers=tmp_headers)
             )
@@ -700,12 +704,15 @@ def url_save(
                 try:
                     buffer = response.read(1024 * 256)
                 except socket.timeout:
+                    logging.error("---response read failed due to timeout")
                     pass
                 if not buffer:
-                    if received == file_size:  # Download finished
+                    logging.debug("-------received : {r} file_size {s}".format(r=received/1048576, s=file_size/1048576))
+                    if received >= file_size:  # Download finished
                         break
                     # Unexpected termination. Retry request
                     tmp_headers['Range'] = 'bytes=' + str(received) + '-'
+                    logging.error("--response buffer is : {}, urlopen_with_retry ".format(buffer))
                     response = urlopen_with_retry(
                         request.Request(url, headers=tmp_headers)
                     )
