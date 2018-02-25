@@ -68,6 +68,7 @@ def _get_video_list(resourceID):
     data = res.read()
 
     video_xml = data.decode("utf-8")
+    print(video_xml)
 
     root = ET.fromstring(video_xml.split('___!!!___')[0])
 
@@ -124,7 +125,7 @@ def ucas_download_single(url, output_dir = '.', merge = False, info_only = False
         # pdb.set_trace()
         logging.debug("###begin to download_urls")
         if not info_only:
-            download_urls(part, part_title, 'flv', total_size=None, output_dir=output_dir, merge=merge)
+            download_urls(part, part_title.strip(), 'flv', total_size=None, output_dir=output_dir, merge=merge)
             # download_urls(part, part_title, 'flv', total_size=None, output_dir=output_dir, merge=merge, headers=headers)
 
 def ucas_download_playlist(url, output_dir = '.', merge = False, info_only = False, **kwargs):
