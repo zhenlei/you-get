@@ -131,6 +131,14 @@ def ffmpeg_concat_ts_to_mkv(files, output='output.mkv'):
     except:
         return False
 
+def ffmpeg_concat_flv(files, output='output.flv'):
+    concat_list = generate_concat_list(files, output)
+    params = [FFMPEG] + LOGLEVEL +['-y', '-f', 'concat', '-safe', '-1',
+                                   '-i', concat_list, '-c','copy', output]
+    subprocess.check_call(params, stdin=STDIN)
+    os.remove(output + '.txt')
+    return True
+
 def ffmpeg_concat_flv_to_mp4(files, output='output.mp4'):
     print('Merging video parts... ', end="", flush=True)
     # Use concat demuxer on FFmpeg >= 1.1

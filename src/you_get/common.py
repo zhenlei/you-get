@@ -856,7 +856,9 @@ def get_output_filename(urls, title, ext, output_dir, merge):
     if (len(urls) > 1) and merge:
         from .processor.ffmpeg import has_ffmpeg_installed
         if ext in ['flv', 'f4v']:
-            if has_ffmpeg_installed():
+            if True:
+                merged_ext = 'flv'
+            elif has_ffmpeg_installed():
                 merged_ext = 'mp4'
             else:
                 merged_ext = 'flv'
@@ -956,7 +958,11 @@ def download_urls(
         elif ext in ['flv', 'f4v']:
             try:
                 from .processor.ffmpeg import has_ffmpeg_installed
-                if has_ffmpeg_installed():
+                if True:
+                    print("----------------concat flvs into flv")
+                    from .processor.ffmpeg import ffmpeg_concat_flv
+                    ffmpeg_concat_flv(parts, output_filepath)
+                elif has_ffmpeg_installed():
                     from .processor.ffmpeg import ffmpeg_concat_flv_to_mp4
                     ffmpeg_concat_flv_to_mp4(parts, output_filepath)
                 else:
@@ -1323,6 +1329,10 @@ def script_main(download, download_playlist, **kwargs):
         '-h', '--help', action='store_true',
         help='Print this help message and exit'
     )
+    parser.add_argument(
+        '--concat-demux', dest='concat_demux', action='store_true', default=False,
+        help='dont repackage flv into mp4'
+    )
 
     dry_run_grp = parser.add_argument_group(
         'Dry-run options', '(no actual downloading)'
@@ -1492,6 +1502,8 @@ def script_main(download, download_playlist, **kwargs):
             extra['extractor_proxy'] = extractor_proxy
         if stream_id:
             extra['stream_id'] = stream_id
+        if args.concat_demux:
+            extra['concat_demux'] = True
         download_main(
             download, download_playlist,
             URLs, args.playlist,

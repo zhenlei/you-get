@@ -4,6 +4,7 @@ import argparse
 import logging
 import subprocess
 from bs4 import BeautifulSoup
+from time import sleep
 
 src_dir = "{}/src/".format(os.path.dirname(os.path.realpath(__file__)) )
 sys.path.insert(1, src_dir)
@@ -30,9 +31,6 @@ def get_lessons_dict(url):
         else:
             lessons[lesson_str + "_空"]=None
     return lessons
-
-# list = get_lessons_dict("http://v.ucas.ac.cn/course/getplaytitle.do?menuCode=2&code=49198&classcode=1&classid=GptTtpMKjbVrbKPQhR&sectionNumber=3&sectionDisplay=1")
-# print(list)
 
 def main():
     """the main entry point"""
@@ -68,20 +66,34 @@ def main():
     print(url)
     urls = get_lessons_dict(url)
     for name, url in urls.items():
-        if url:
+        if url and name == "第32讲":
             full_url = "http://v.ucas.ac.cn/course/" + url
             output_path = os.path.join(output, name)
-            command = ['./you-get', '-d', '-f', '-t', '6', '-o', output_path, full_url]
-            print(command)
-            subprocess.Popen(command)
-        print(output_path)
-        print(full_url)
+            if not os.path.exists(output_path):
+                os.mkdir(output_path)
+            command = ['./you-get', '-d', '-t', '6', '-o', output_path, full_url, '2>&1']
+            print("command is ", command)
+            log_path = os.path.join(output_path, "fetchl.log")
+            f = open(log_path, "wb")
+            with subprocess.Popen(command, stdout=subprocess.PIPE) as proc:
+                print("Popen is called----------")
+                for line in proc.stdout:
+                    f.write(line)
 
+                proc.wait()
+                logging.debug("----------communicate finish begin sleep")
+                sleep(60)
+        else:
+            print("----------------url: {}".format(name))
+
+        # print(output_path)
+        # print(full_url)
 
 def entry_main():
     try:
         main()
-    except KeyBoardInterrupt:
+    except KeyboardInterrupt:
         sys.exit(1)
 
 entry_main()
+
